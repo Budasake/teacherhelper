@@ -1,10 +1,68 @@
-
+"use client";
 import Link from "next/link";
+import { useState, type FormEvent } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function RegisterPage() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+
+  async function handleRegister(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setMessage("");
+
+    const formData = new FormData(event.currentTarget);
+    const fullName = String(formData.get("fullName") || "").trim();
+    const email = String(formData.get("email") || "").trim();
+    const password = String(formData.get("password") || "");
+    const confirmPassword = String(formData.get("confirmPassword") || "");
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
+    if (password.length < 8) {
+      setError("Password must contain at least 8 characters.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const supabase = createClient();
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/login`,
+        },
+      });
+
+      if (error) {
+        setError(error.message);
+      } else if (data.session) {
+        setMessage("Your account has been created. You can now sign in.");
+      } else {
+        setMessage(
+          "Registration successful! Please check your email to confirm your account."
+        );
+      }
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <main className="min-h-screen bg-white lg:grid lg:grid-cols-2">
-      {/* Left panel */}
       <section className="hidden bg-indigo-700 p-12 text-white lg:flex lg:flex-col lg:justify-between">
         <Link href="/" className="text-2xl font-bold">
           TeacherHelper
@@ -27,32 +85,23 @@ export default function RegisterPage() {
           © 2026 TeacherHelper. All rights reserved.
         </p>
       </section>
-
-      {/* Registration form */}
       <section className="flex items-center justify-center px-6 py-12 sm:px-12">
         <div className="w-full max-w-md">
-          <Link
-            href="/"
-            className="text-xl font-bold text-indigo-700 lg:hidden"
-          >
-            TeacherHelper
-          </Link>
           <Link
             href="/"
             className="mb-8 inline-flex items-center text-sm text-slate-400 hover:text-indigo-600"
           >
             ← Back to home
           </Link>
-          <div className="mt-8 lg:mt-0">
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900">
-              Create your account
-            </h2>
-            <p className="mt-2 text-sm text-gray-500">
-              Register as a student to access your courses.
-            </p>
-          </div>
 
-          <form className="mt-8 space-y-5">
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900">
+            Create your account
+          </h2>
+          <p className="mt-2 text-sm text-gray-500">
+            Register as a student to access your courses.
+          </p>
+
+          <form onSubmit={handleRegister} className="mt-8 space-y-5">
             <div>
               <label htmlFor="fullName" className="mb-2 block text-sm font-medium text-gray-700">
                 Full name
@@ -114,11 +163,24 @@ export default function RegisterPage() {
               />
             </div>
 
+            {error && (
+              <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                {error}
+              </p>
+            )}
+
+            {message && (
+              <p role="status" className="rounded-lg bg-green-50 p-3 text-sm text-green-700">
+                {message}
+              </p>
+            )}
+
             <button
-              type="button"
-              className="w-full rounded-lg bg-indigo-600 px-4 py-3 font-semibold text-white transition hover:bg-indigo-700"
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-lg bg-indigo-600 px-4 py-3 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Create student account
+              {loading ? "Creating account..." : "Create student account"}
             </button>
           </form>
 

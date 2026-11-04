@@ -1,96 +1,113 @@
+"use client";
 
 import Link from "next/link";
+import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
+  const router = useRouter();
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const formData = new FormData(event.currentTarget);
+    const email = String(formData.get("email") || "").trim();
+    const password = String(formData.get("password") || "");
+
+    try {
+      const supabase = createClient();
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setError(error.message);
+        return;
+      }
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
-    <main className="flex min-h-screen bg-white">
-      {/* Left section */}
-      <section className="hidden w-1/2 flex-col justify-between bg-indigo-700 p-12 text-white lg:flex">
+    <main className="min-h-screen bg-white lg:grid lg:grid-cols-2">
+      <section className="hidden bg-indigo-700 p-12 text-white lg:flex lg:flex-col lg:justify-between">
         <Link href="/" className="text-2xl font-bold">
           TeacherHelper
         </Link>
 
-        <div className="max-w-lg">
-          <p className="text-sm font-semibold uppercase tracking-widest text-indigo-200">
-            AI-powered university learning
+        <div className="max-w-md">
+          <p className="mb-4 text-sm font-semibold uppercase tracking-widest text-indigo-200">
+            Welcome back
           </p>
-
-          <h1 className="mt-6 text-5xl font-bold leading-tight">
-            Your learning journey starts here.
+          <h1 className="text-5xl font-bold leading-tight">
+            Continue your learning journey.
           </h1>
-
           <p className="mt-6 text-lg leading-8 text-indigo-100">
-            Connect with your courses, explore learning materials,
-            and get support from your AI learning assistant.
+            Access your courses and get help from your AI learning assistant.
           </p>
-
-          <div className="mt-10 rounded-2xl border border-white/20 bg-white/10 p-6">
-            <p className="text-lg font-medium">
-              "Learn smarter with AI assistance."
-            </p>
-            <p className="mt-3 text-sm text-indigo-200">
-              TeacherHelper AI Learning Platform
-            </p>
-          </div>
         </div>
 
         <p className="text-sm text-indigo-200">
-          © 2026 TeacherHelper AI
+          © 2026 TeacherHelper. All rights reserved.
         </p>
       </section>
 
-      {/* Right section */}
-      <section className="flex flex-1 items-center justify-center px-6 py-12">
+      <section className="flex items-center justify-center px-6 py-12 sm:px-12">
         <div className="w-full max-w-md">
-          <div className="mb-10 lg:hidden">
-            <Link href="/" className="text-2xl font-bold text-indigo-700">
-              TeacherHelper
-            </Link>
-          </div>
-
           <Link
             href="/"
-            className="text-sm text-slate-400 hover:text-indigo-600"
+            className="mb-10 inline-flex items-center text-sm text-slate-400 hover:text-indigo-600"
           >
             ← Back to home
           </Link>
 
-          <h2 className="mt-8 text-3xl font-bold tracking-tight">
-            Welcome back
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900">
+            Sign in to your account
           </h2>
-
-          <p className="mt-3 text-sm leading-6 text-slate-500">
-            Sign in to continue to your learning workspace.
+          <p className="mt-2 text-sm text-gray-500">
+            Enter your details to access TeacherHelper.
           </p>
 
-          <form className="mt-9 space-y-5">
+          <form onSubmit={handleLogin} className="mt-8 space-y-5">
             <div>
               <label
                 htmlFor="email"
-                className="mb-2 block text-sm font-semibold"
+                className="mb-2 block text-sm font-medium text-gray-700"
               >
                 Email address
               </label>
-
               <input
                 id="email"
                 name="email"
                 type="email"
-                placeholder="you@university.edu"
+                placeholder="name@university.edu"
                 required
-                className="w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50"
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100"
               />
             </div>
 
             <div>
-              <div className="mb-2 flex justify-between">
+              <div className="mb-2 flex items-center justify-between">
                 <label
                   htmlFor="password"
-                  className="text-sm font-semibold"
+                  className="block text-sm font-medium text-gray-700"
                 >
                   Password
                 </label>
-
                 <Link
                   href="/forgot-password"
                   className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
@@ -105,36 +122,39 @@ export default function LoginPage() {
                 type="password"
                 placeholder="Enter your password"
                 required
-                className="w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm outline-none transition focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50"
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100"
               />
             </div>
 
+            {error && (
+              <p
+                role="alert"
+                className="rounded-lg bg-red-50 p-3 text-sm text-red-700"
+              >
+                {error}
+              </p>
+            )}
+
             <button
-              type="button"
-              className="w-full rounded-xl bg-indigo-600 py-4 text-sm font-semibold text-white shadow-lg shadow-indigo-100 transition hover:bg-indigo-700"
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-lg bg-indigo-600 px-4 py-3 font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Sign in →
+              {loading ? "Signing in..." : "Sign in"}
             </button>
           </form>
 
-          <div className="mt-8 border-t border-slate-100 pt-6 text-center">
-            <p className="text-sm text-slate-500">
-              Don't have an account?{" "}
-              <Link
-                href="/register"
-                className="font-semibold text-indigo-600 hover:text-indigo-700"
-              >
-                Create account
-              </Link>
-            </p>
-          </div>
-
-          <p className="mt-10 text-center text-xs text-slate-400">
-            Secure access for students, teachers, and administrators.
+          <p className="mt-6 text-center text-sm text-gray-500">
+            Don't have an account?{" "}
+            <Link
+              href="/register"
+              className="font-semibold text-indigo-600 hover:text-indigo-700"
+            >
+              Create an account
+            </Link>
           </p>
         </div>
       </section>
     </main>
   );
 }
-
